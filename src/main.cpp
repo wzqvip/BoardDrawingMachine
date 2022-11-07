@@ -1,12 +1,9 @@
 
-
-//本程序可以自动画一些几何图形和函数曲线，用来测试主机运行状态。
 #include <Arduino.h>
 #include <Servo.h>
 #include <TinyStepper_28BYJ_48.h>
 
-//调试代码标志，去掉注释，可以输出调试信息（程序运行会慢）
-//#define VERBOSE (1)
+//#define DEBUG_MODE (1)
 //调试标志
 
 #define STEPS_PER_TURN (2048)  //步进电机一周步长 2048步转360度
@@ -30,7 +27,7 @@
 static long laststep1,
     laststep2;  //当前线长度 记录笔位置
 
-#define X_SEPARATION 1100               //两绳上方的水平距离mm
+#define X_SEPARATION 1100              //两绳上方的水平距离mm
 #define LIMXMAX (X_SEPARATION * 0.5)   // x轴最大值  0位在画板中心
 #define LIMXMIN (-X_SEPARATION * 0.5)  // x轴最小值
 
@@ -67,10 +64,8 @@ static float feed_rate = 0;
 static int ps;
 
 /*以下为G代码通讯参数 */
-#define BAUD \
-  (115200)  //串口速率，用于传输G代码或调试 可选9600，57600，115200
-            //或其他常用速率
-#define MAX_BUF (64)  //串口缓冲区大小
+#define BAUD (115200)  //串口速率
+#define MAX_BUF (64)   //串口缓冲区大小
 
 Servo pen;
 
@@ -173,10 +168,8 @@ static void teleport(float x, float y) {
   laststep2 = l2;
 }
 
-//==========================================================
-//参考————斜线程序
 void moveto(float x, float y) {
-#ifdef VERBOSE
+#ifdef DEBUG_MODE
   Serial.println("Jump in line() function");
   Serial.print("x:");
   Serial.print(x);
@@ -189,7 +182,7 @@ void moveto(float x, float y) {
   long d1 = l1 - laststep1;
   long d2 = l2 - laststep2;
 
-#ifdef VERBOSE
+#ifdef DEBUG_MODE
   Serial.print("l1:");
   Serial.print(l1);
   Serial.print(" laststep1:");
@@ -239,8 +232,6 @@ void moveto(float x, float y) {
   posy = y;
 }
 
-//------------------------------------------------------------------------------
-//长距离移动会走圆弧轨迹，所以将长线切割成短线保持直线形态
 static void line_safe(float x, float y) {
   // split up long lines to make them straighter?
   float dx = x - posx;
@@ -263,14 +254,6 @@ static void line_safe(float x, float y) {
     moveto((x - x0) * a + x0, (y - y0) * a + y0);
   }
   moveto(x, y);
-}
-
-//=======================================================================================
-//------------------------------------------------------------------------------
-static void help() {
-  Serial.println(
-      F("== Wall Drawing Machine https://github.com/shihaipeng03/Walldraw =="));
-  Serial.println(F(" "));
 }
 
 void line(float x, float y) { line_safe(x, y); }
@@ -394,7 +377,19 @@ void arc(float xx, float yy, float radius, float sangle, float eangle) {
 }
 
 //星
-void star(float xx, float yy, float radius_r, int corner) {}
+void star(float xx, float yy, float radius_r, int corner) {
+  float rx, ry, i;
+  float st = 3.14159 / corner;  //圆分割精度
+  pen_up();
+  line(xx + radius_r, yy);
+  pen_down();
+  for (i = 0; i < 6.28318; i += st) {
+    rx = cos(i) * radius_r;
+    ry = sin(i) * radius_r;
+    line(xx + rx, yy + ry);
+  }
+  pen_up();
+}
 
 void demo1() {
   pen_up();
@@ -457,13 +452,7 @@ void demo2() {
   } while (rd < 100);
 }
 
-void test_main() {
-  pen_up();
-  delay(2000);
-  pen_down();
-  line(45, 30);
-  delay(2000);
-}
+void test_main() { star(0, 0, 50, 5); }
 
 void setup() {
   // put your setup code here, to run once:
@@ -482,18 +471,25 @@ void setup() {
 
   //将当前笔位置设置为0，0
   teleport(0, 0);
-
   pen_up();
-  Serial.println("Test OK!");
+
+  Serial.println("Prepared! ");
+
+  test_main();
+
+  Serial.println("Done! ");
 }
 
 void loop() {
   // Demo
   // 程序会画一些简单的图形延时，请在调试好参数后，将A4或更大的纸张，中心对准笔架再开机。
 
-  demo2();
+  // demo2();
 
   // test_main();
 
   // demo2();   //去掉最前面的//还可以演示另外一段代码。
+
+  Serial.println("Done! ");
+  delay(5000);
 }
