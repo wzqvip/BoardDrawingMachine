@@ -391,6 +391,7 @@ void star(float xx, float yy, float radius_r, int corner) {
   pen_up();
 }
 
+
 void demo1() {
   pen_up();
   box(-45, 0, 90, 90);
@@ -474,7 +475,7 @@ void setup() {
   pen_up();
 
   Serial.println("Prepared! ");
-
+   
   test_main();
 
   Serial.println("Done! ");
